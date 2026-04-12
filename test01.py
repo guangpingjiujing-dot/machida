@@ -1,5 +1,0 @@
-print("hello from test01")
-print("hello from test02")
-print("hello from test03!")
-print("hello from test04")
-print("hello from test04 by taitech")
