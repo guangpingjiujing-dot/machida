@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .        # 自前の Dockerfile を使ってイメージをビルド
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:16   # Docker Hub から公式イメージを取得
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
