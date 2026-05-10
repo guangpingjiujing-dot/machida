@@ -28,3 +28,18 @@ models:
     dbt_bigquery_quickstart:
       +materialized: table
       +schema: jaffle_shop
+
+    staging:
+      +materialized: view
+      +schema: staging
+
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+
+    marts:
+      +materialized: table
+      bi:
+        +schema: marts_bi
+      analytics:
+        +schema: marts_analytics

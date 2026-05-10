@@ -1,0 +1,18 @@
+sources:
+    - name: jaffle_shop
+      description: This is a replica of the Postgres database used by our app
+      database: dbt-tutorial
+      schema: jaffle_shop
+      tables:
+          - name: customers
+            description: One record per customer.
+          - name: orders
+            description: One record per order. Includes cancelled and deleted orders.
+
+    - name: stripe
+      description: "Mock data from the Stripe payment gateway. Used to verify revenue and refunds."
+      database: dbt-tutorial
+      schema: stripe
+      tables:
+          - name: payment
+            description: "Transaction-level payment data. Multiple attempts may exist for a single order."
