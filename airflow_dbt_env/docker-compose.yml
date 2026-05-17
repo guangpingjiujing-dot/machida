@@ -1,0 +1,66 @@
+x-airflow-common: &airflow-common
+  # 先ほど作った Dockerfile を元にカスタム環境をビルドします
+  build: .
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+    - AIRFLOW__CORE__FERNET_KEY=FB1c1ZsR2HiaNJD3LceY_2wOfb96A-N-v6U-e74_p9w=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+  volumes:
+    # ログやDAG（ジョブのコード）をローカルと同期します
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    # 既存のdbtプロジェクト（test_dbt_pj）をAirflow内から触れるように同期します
+    - ../test_dbt_pj:/opt/airflow/test_dbt_pj
+    
+    # 👇 WindowsのGoogle認証情報を絶対パスで確実にAirflowコンテナに引き渡します
+    - C:\Users\7beha\AppData\Roaming\gcloud:/home/airflow/.config/gcloud
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  # データを保存する内部データベース
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflowの管理画面（Web UI）
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ジョブをスケジュール通りに実行する司令塔
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+
+  # 初回起動時にデータベースやログインユーザー（admin）を自動作成する初期化用コンテナ
+  airflow-init:
+    <<: *airflow-common
+    command: version
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+    user: "0:0"
