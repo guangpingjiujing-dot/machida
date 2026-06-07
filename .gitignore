@@ -60,3 +60,5 @@ profiles.yml
 target/
 dbt_packages/
 logs/
+
+airflow_dbt_env/dbt-sa-key.json
