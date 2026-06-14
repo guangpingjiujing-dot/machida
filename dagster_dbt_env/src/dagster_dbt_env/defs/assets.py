@@ -2,8 +2,9 @@ import pandas as pd
 
 import dagster as dg
 
-sample_data_file = "C:/test_github/machida/dagster_dbt_env/sample.csv"
-processed_data_file = "C:/test_github/machida/dagster_dbt_env/sample_out.csv"
+# マウント先のコンテナ内パス（/opt/dagster/app）を指定します
+sample_data_file = "/opt/dagster/app/sample.csv"
+processed_data_file = "/opt/dagster/app/sample_out.csv"
 
 
 @dg.asset

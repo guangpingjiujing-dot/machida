@@ -1,0 +1,54 @@
+services:
+  dagster_user_code:
+    image: dagster_dbt_env-dagster_user_code
+    restart: always
+    command: dagster code-server start -h 0.0.0.0 -p 4000 -m dagster_dbt_env
+    environment:
+      - DAGSTER_GRPC_TIMEOUT_SECONDS=120
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - PYTHONPATH=/opt/dagster/app/src
+      - DBT_SA_KEY_PATH=/opt/dbt/dbt_project/dbt-sa-key.json
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/opt/dagster/app
+      - ../test_dbt_pj:/opt/dbt/dbt_project
+      - ./dbt-sa-key.json:/opt/dbt/dbt_project/dbt-sa-key.json
+      - ./dagster_home:/opt/dagster/dagster_home
+
+  dagster_webserver:
+    image: dagster_dbt_env-dagster_user_code
+    restart: always
+    working_dir: /opt/dagster/dagster_home  # ★追加: 作業ディレクトリを指定
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - "0.0.0.0"
+      - -p
+      - "3000"
+      - -w               # ★ワークスペースを指定
+      - workspace.yaml
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./dagster_home:/opt/dagster/dagster_home
+      - ./workspace.yaml:/opt/dagster/dagster_home/workspace.yaml # ★変更: DAGSTER_HOME配下に配置
+    depends_on:
+      - dagster_user_code
+
+  dagster_daemon:
+    image: dagster_dbt_env-dagster_user_code
+    restart: always
+    working_dir: /opt/dagster/dagster_home  # ★追加: 作業ディレクトリを指定
+    entrypoint:
+      - dagster-daemon
+      - run
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+    volumes:
+      - ./dagster_home:/opt/dagster/dagster_home
+      - ./workspace.yaml:/opt/dagster/dagster_home/workspace.yaml # ★変更: DAGSTER_HOME配下に配置
+    depends_on:
+      - dagster_user_code
