@@ -62,3 +62,7 @@ dbt_packages/
 logs/
 
 airflow_dbt_env/dbt-sa-key.json
+
+# 一時フォルダごと除外する場合 (推奨)
+*.db
+.tmp_*
