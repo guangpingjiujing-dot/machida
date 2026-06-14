@@ -66,3 +66,7 @@ airflow_dbt_env/dbt-sa-key.json
 # 一時フォルダごと除外する場合 (推奨)
 *.db
 .tmp_*
+
+# GCPのサービスアカウントキーを除外
+dagster_dbt_env/dbt-sa-key.json
+test_dbt_pj/dbt-sa-key.json

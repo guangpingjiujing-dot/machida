@@ -2,7 +2,8 @@ from pathlib import Path
 from dagster import AssetExecutionContext
 from dagster_dbt import DbtCliResource, dbt_assets, DagsterDbtTranslator
 
-DBT_PROJECT_DIR = Path(r"C:\test_github\machida\test_dbt_pj")
+# ★ コンテナ内のパスに変更します
+DBT_PROJECT_DIR = Path("/opt/dbt/dbt_project")
 
 class MyDbtTranslator(DagsterDbtTranslator):
     def get_asset_key(self, record):
