@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 import pendulum
 from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
@@ -10,8 +10,7 @@ local_tz = pendulum.timezone("Asia/Tokyo")
 
 cosmos_dag = DbtDag(
     dag_id="dbt_after_cosmos",
-    # JST タイムゾーンを明示
-    start_date=pendulum.datetime(2026, 5, 23, tz=local_tz),
+    start_date=datetime(2026, 5, 23, tzinfo=local_tz),
     schedule_interval="0 7 * * *",
     catchup=False,
     max_active_runs=1,
