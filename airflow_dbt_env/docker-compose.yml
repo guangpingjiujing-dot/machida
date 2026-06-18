@@ -41,10 +41,9 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
 
-# 2. 各サービス定義
+# 2. その次に各サービスを定義する
 services:
   postgres:
-    # Postgres 13 は 2025年11月でサポート終了のため 16 に更新
     image: postgres:16
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
