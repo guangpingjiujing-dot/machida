@@ -6,6 +6,7 @@ from airflow.operators.bash import BashOperator
 # JST タイムゾーンを明示 (timezone-naive のままだと UTC 扱いになり実行時刻がずれる)
 local_tz = pendulum.timezone("Asia/Tokyo")
 
+# 1. ジョブの基本設定
 default_args = {
     'owner': 'machida',
     'depends_on_past': False,
@@ -17,6 +18,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
+# 2. DAG（定期ジョブのまとまり）の定義
 with DAG(
     'run_dbt_daily',
     default_args=default_args,
@@ -29,6 +31,8 @@ with DAG(
     tags=['dbt'],
 ) as dag:
 
+    # 3. 実行するコマンド（dbt run）の定義
+    #    profiles-dirに「.」を指定し、プロジェクト直下のprofiles.ymlを読み込ませます
     execute_dbt = BashOperator(
         task_id='dbt_run_task',
         bash_command='cd /opt/airflow/test_dbt_pj && dbt run --profiles-dir .',
