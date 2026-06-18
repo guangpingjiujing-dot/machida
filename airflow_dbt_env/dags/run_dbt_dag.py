@@ -24,7 +24,7 @@ with DAG(
     schedule_interval='@daily',
     # start_date に timezone を付与して UTC/JST のずれを防ぐ
     start_date=pendulum.datetime(2026, 5, 1, tz=local_tz),
-    max_active_runs=1,
+    max_active_runs=1,  # 同時実行数を最大1つに制限（詰まり防止）
     catchup=False,
     tags=['dbt'],
 ) as dag:
