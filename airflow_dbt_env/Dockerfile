@@ -2,10 +2,10 @@ FROM apache/airflow:2.9.1
 
 USER root
 
-# コンパイルに必要なシステムパッケージを導入
-# --no-install-recommends で不要な推薦パッケージを除外してイメージサイズを削減
+# 1. コンパイルに必要なシステムパッケージを入れ、さらに一時フォルダ(/tmp)の権限を解放
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    && chmod 777 /tmp \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
