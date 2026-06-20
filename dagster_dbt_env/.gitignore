@@ -201,3 +201,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Dagster runtime artifacts (logs, run state, pickled outputs)
+dagster_home/storage/
+dagster_home/.nux/
+dagster_home/.telemetry/
+
+# GCP service account key
+dbt-sa-key.json
+
+# Generated asset output
+sample_out.csv
