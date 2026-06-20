@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ★ 追加: Dagsterホームディレクトリをコンテナ内に作成する
 RUN mkdir -p /opt/dagster/dagster_home
 
-# Dagster、dbt、BigQuery用アダプターを一括インストール（バージョンはpyproject.tomlに合わせる）
+# Dagster、dbt、BigQuery用アダプターを一括インストール
 RUN pip install --no-cache-dir \
     "dagster==1.13.8" \
     dagster-graphql \

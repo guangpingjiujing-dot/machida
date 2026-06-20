@@ -7,8 +7,11 @@ from .resources import DBT_PROJECT_DIR
 class MyDbtTranslator(DagsterDbtTranslator):
     def get_asset_key(self, record):
         key = super().get_asset_key(record)
+
+        # 辞書型（dict）としてキーにアクセスするように修正します
         if record.get("resource_type") == "source":
             return key.with_prefix(["test_dbt_pj", "sources"])
+
         return key.with_prefix(["test_dbt_pj", "models"])
 
 
