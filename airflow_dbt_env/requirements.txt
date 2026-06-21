@@ -1,0 +1,16 @@
+# ============================================================
+# Airflow カスタムイメージの追加依存パッケージ
+#
+# 本番運用時は ">=x.y.z" の範囲指定ではなく "==x.y.z" で
+# バージョンを固定し、再現性を担保すること。
+# バージョン確認: pip freeze | grep <package>
+# ============================================================
+
+# Google Cloud 系 (BigQuery への接続・書き込みに使用)
+google-cloud-aiplatform>=1.127.0
+google-cloud-bigquery>=3.26.0
+gcloud-aio-bigquery
+
+# Astronomer Cosmos: Airflow から dbt モデルを Task として実行するライブラリ
+# dbt-bigquery は BigQuery プロファイル用のアダプター
+astronomer-cosmos[dbt-bigquery]

@@ -1,24 +1,42 @@
-# 1. まずアンカー定義を最上部に持ってくる
+# ============================================================
+# 本番運用に向けた主な変更点:
+#   1. シークレット類を .env ファイルに切り出し (FERNET_KEY 等)
+#   2. Postgres にデータ永続化ボリュームを追加
+#   3. restart ポリシーを追加
+#   4. Postgres イメージを 13 → 16 に更新
+#   5. airflow-init の environment に FERNET_KEY 等を明示 (脱落バグを修正)
+#
+# 未対応 (インフラ変更が必要):
+#   - Executor: LocalExecutor → 本番では CeleryExecutor / KubernetesExecutor を推奨
+#   - SA キー: JSON ファイルマウント → 本番では Workload Identity を推奨
+#   - ログ: ローカル保存 → 本番では GCS 等の外部ストレージへの転送を推奨
+# ============================================================
+
+# 1. 共通設定アンカー
 x-airflow-common: &airflow-common
   build: .
   environment:
+    # シークレット類は .env から読み込む (.gitignore で除外済み)
     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
-    - AIRFLOW__CORE__FERNET_KEY=FB1c1ZsR2HiaNJD3LceY_2wOfb96A-N-v6U-e74_p9w=
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+    - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    # 本番では Workload Identity に移行し、JSON キーファイルをなくすことを推奨
     - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/dbt-sa-key.json
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - type: bind
-      source: C:/test_github/machida/test_dbt_pj
+      source: ../test_dbt_pj
       target: /opt/airflow/test_dbt_pj
     - type: bind
       source: ./dbt-sa-key.json
       target: /opt/airflow/dbt-sa-key.json
       read_only: true
   user: "0:0"
+  # コンテナ異常終了時に自動再起動する
+  restart: unless-stopped
   depends_on:
     postgres:
       condition: service_healthy
@@ -26,13 +44,17 @@ x-airflow-common: &airflow-common
 # 2. その次に各サービスを定義する
 services:
   postgres:
-    image: postgres:13
+    image: postgres:16
     environment:
-      - POSTGRES_USER=airflow
-      - POSTGRES_PASSWORD=airflow
-      - POSTGRES_DB=airflow
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    # データ永続化: ボリュームがないとコンテナ再起動で Airflow のメタデータが全消去される
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,10 +78,21 @@ services:
     <<: *airflow-common
     command: version
     environment:
+      # airflow-init の environment は共通アンカーを上書きするため、
+      # 必要な変数をすべて明示的に列挙する (FERNET_KEY 等の脱落バグを防ぐ)
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/dbt-sa-key.json
       - _AIRFLOW_DB_UPGRADE=true
       - _AIRFLOW_WWW_USER_CREATE=true
-      - _AIRFLOW_WWW_USER_USERNAME=admin
-      - _AIRFLOW_WWW_USER_PASSWORD=admin
+      - _AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_ADMIN_USER}
+      - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_ADMIN_PASSWORD}
+    # 初期化処理 (DB マイグレーション・管理者ユーザー作成) は root が必要
     user: "0:0"
+    restart: "no"
+
+# 名前付きボリューム: Postgres データ永続化用
+volumes:
+  postgres_data:

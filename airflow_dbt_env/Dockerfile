@@ -11,14 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER airflow
 
-# 2. pipを最新化
-RUN pip install --no-cache-dir --upgrade pip
-
-# 3. バージョンパニックを防ぐための指定インストール
-RUN pip install --no-cache-dir \
-    "google-cloud-aiplatform>=1.127.0" \
-    "google-cloud-bigquery>=3.26.0" \
-    gcloud-aio-bigquery
-
-# 4. Airflow Cosmos と dbt-bigquery をインストール
-RUN pip install --no-cache-dir "astronomer-cosmos[dbt-bigquery]"
+# pip を最新化してから requirements.txt を一括インストール
+# 本番では requirements.txt のバージョンを "==" で固定すること
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r /tmp/requirements.txt

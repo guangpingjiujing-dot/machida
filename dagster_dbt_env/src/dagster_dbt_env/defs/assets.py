@@ -1,10 +1,12 @@
-import pandas as pd
+import os
+from pathlib import Path
 
+import pandas as pd
 import dagster as dg
 
-# マウント先のコンテナ内パス（/opt/dagster/app）を指定します
-sample_data_file = "/opt/dagster/app/sample.csv"
-processed_data_file = "/opt/dagster/app/sample_out.csv"
+_app_dir = Path(os.getenv("DAGSTER_APP_DIR", "/opt/dagster/app"))
+sample_data_file = _app_dir / "sample.csv"
+processed_data_file = _app_dir / "sample_out.csv"
 
 
 @dg.asset
