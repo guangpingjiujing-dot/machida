@@ -63,6 +63,11 @@ logs/
 
 airflow_dbt_env/dbt-sa-key.json
 
+# Spark ハンズオンの大容量入力データ
+# ZIP (約 295MB) は GitHub の 100MB 制限を超えるため、展開後の CSV と合わせて Git の対象外にする
+spark_duckdb_handson/input/*.zip
+spark_duckdb_handson/input/baseball/
+
 # 一時フォルダごと除外する場合 (推奨)
 *.db
 .tmp_*
