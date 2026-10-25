@@ -12,6 +12,9 @@ from pathlib import Path
 # Spark を起動するための機能を読み込む
 from pyspark.sql import SparkSession
 
+# 実行終了後も Spark History Server で結果を確認できるようにする
+from spark_history import configure_event_logging
+
 # 件数を数える集計関数を F という短い名前で読み込む
 from pyspark.sql import functions as F
 
@@ -102,7 +105,7 @@ def main() -> None:
     # local[2] は、この PC で最大 2 個のタスクを同時に実行する設定
     # これは「同時に働ける作業員の数」であり、パーティション数そのものではない
     spark = (
-        SparkSession.builder
+        configure_event_logging(SparkSession.builder)
         .appName("ReadBaseballCsv")
         .master("local[2]")
         # groupBy() 後に結果を集め直す処理（Shuffle）の分割数を 4 とする学習用設定

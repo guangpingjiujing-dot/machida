@@ -1,6 +1,9 @@
 # Spark を起動するための機能を読み込む
 from pyspark.sql import SparkSession
 
+# 実行終了後も Spark History Server で結果を確認できるようにする
+from spark_history import configure_event_logging
+
 # Ubuntu 側のホームディレクトリを安全に取得するために使う
 from pathlib import Path
 
@@ -9,7 +12,7 @@ from pyspark.sql import functions as F
 
 # Spark を起動する
 spark = (
-    SparkSession.builder
+    configure_event_logging(SparkSession.builder)
     # Spark の実行名
     .appName("SparkToParquet")
     # 自分のPC上で2つの実行スレッドを使う設定

@@ -93,7 +93,7 @@ VS Code の左上と左下に `spark_duckdb_handson [WSL: Ubuntu]`、`WSL: Ubunt
 
 Spark / DuckDB の環境構築、Spark の起動確認、Parquet の Ubuntu 側への保存は完了しています。
 
-次に `03_duckdb_read_parquet.py` を実行し、Spark が保存した Parquet を DuckDB の SQL で直接読めることを確認します。
+Spark が保存した野球データの Parquet から、ローカル DuckDB ファイル `~/workspace/spark_duckdb_output/baseball/baseball.duckdb` を作成済みです。データベース内には `baseball_year_summary` テーブルがあります。
 
 ## 野球データのハンズオンでの制御
 
@@ -169,3 +169,22 @@ python 05_duckdb_query_baseball_summary.py
 この操作により、Ubuntu 側に `~/workspace/spark_duckdb_output/baseball/baseball.duckdb` が作成されます。データベース内のテーブル名は `baseball_year_summary` です。Parquet を直接読むだけではなく、DuckDB のデータベースへ保存して SQL で確認する段階です。
 
 > ZIP の展開と野球データの処理は、環境構築ではなく次のハンズオン用データ準備です。
+
+## ローカル DuckDB UI の利用
+
+MotherDuck やクラウドを使わず、WSL のローカル DuckDB に接続する UI を使えます。VS Code の `WSL: Ubuntu` ターミナルで、次を順番に実行します。
+
+```bash
+# 1. プロジェクトへ移動する
+cd /mnt/c/test_github/machida/spark_duckdb_handson
+
+# 2. Spark / DuckDB 用の仮想環境を有効化する
+source ~/venvs/spark-duckdb-handson/bin/activate
+
+# 3. ローカル DuckDB UI を起動する
+python 99_open_duckdb_ui.py
+```
+
+ブラウザで [http://localhost:4213](http://localhost:4213) を開くと、`baseball.duckdb` の `baseball_year_summary` テーブルを閲覧し、SQL を実行できます。スクリプトはローカル HTTP サーバーを起動するため、起動したターミナルを開いたままにします。停止はそのターミナルで `Ctrl+C` です。
+
+初回の起動時のみ、DuckDB が公式 `ui` 拡張機能を `~/.duckdb/extensions/` へダウンロードします。UI の画面ファイルを更新するために、DuckDB の UI 配信先へ通信する場合もあります。どちらも UI の機能を取得するための通信で、野球データをアップロードしません。UI は既定でクエリもデータもローカルで処理します。MotherDuck を使うには UI 内で明示的にサインインする必要がありますが、このハンズオンでは行いません。

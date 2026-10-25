@@ -69,6 +69,9 @@ Spark の起動確認、PySpark / DuckDB のインストール、サンプル Pa
 | 3 | `03_duckdb_read_parquet.py` | Spark が作った Parquet を DuckDB の SQL で読む |
 | 4 | `04_read_baseball_csv.py` | 50 個の野球 CSV を Spark で一括読込・集計して Parquet 保存する |
 | 5 | `05_duckdb_query_baseball_summary.py` | 野球の Parquet を DuckDB の永続テーブルに取り込み、SQL で確認する |
+| 6 | `06_start_spark_history_server.py` | 完了済み Spark アプリの実行履歴をブラウザで確認できるようにする |
+| 7 | `07_stop_spark_history_server.py` | Spark History Server を停止する |
+| 99 | `99_open_duckdb_ui.py` | ローカル DuckDB UI を起動し、ブラウザで SQL を実行する |
 
 > `02_spark_to_parquet.py` は Spark の入出力を学ぶためのコードです。DuckDB は、Spark が出力した Parquet を確認する手順で使用します。
 
@@ -272,7 +275,60 @@ local[2]           = 同時に実行できる仕事の最大数
 
 `groupBy("year", "seasonType")` は、各パーティションで数えた途中結果を同じキーごとに集め直す処理です。この集め直しを **Shuffle（シャッフル）** と呼びます。`collect()` は実処理の開始を指示する操作で、Python 側へ戻すのは元の 761,618 行ではなく、小さな年別集計結果だけです。
 
-## 6. DuckDB のテーブルとして SQL で確認する
+## 6. Spark UI を実行後に確認する
+
+Spark の通常の Web UI は、Python スクリプトの実行中だけ `http://localhost:4040` で確認できます。このハンズオンのスクリプトは短時間で終了し、最後に `spark.stop()` を実行するため、終了後には通常の Web UI も閉じます。
+
+このハンズオンでは、`01`、`02`、`04` の Spark スクリプトが WSL 側の次のフォルダへイベントログを保存します。`spark_history.py` が自動でフォルダを作るため、事前準備は不要です。
+
+```text
+/home/sparkuser/workspace/spark_history_events/
+```
+
+### History Server を起動する
+
+WSL のターミナルで仮想環境を有効にしてから、次を実行します。History Server はバックグラウンドで起動するため、このコマンドはすぐ終了します。
+
+```bash
+# Spark / DuckDB 用の仮想環境を有効化する
+source ~/venvs/spark-duckdb-handson/bin/activate
+
+# 終了済みアプリの実行履歴を表示するサーバーを起動する
+python 06_start_spark_history_server.py
+```
+
+Windows 側のブラウザで [http://localhost:18080](http://localhost:18080) を開きます。次に、別の WSL ターミナルで Spark のスクリプトを実行します。
+
+```bash
+# 例: 野球 CSV の集計を実行する
+python 04_read_baseball_csv.py
+```
+
+処理が終わったらブラウザを更新し、アプリ一覧の `ReadBaseballCsv` を選択します。終了後も、Jobs・Stages・SQL・Executors の各画面を確認できます。
+
+### UI の読み方
+
+まずは、次の順で見ると処理の流れを追いやすくなります。
+
+| 画面 | このハンズオンで確認する内容 |
+| --- | --- |
+| **Jobs** | `collect()`、`show()`、Parquet 保存のような実行単位。ジョブの所要時間と DAG を確認する。 |
+| **Stages** | Job を分解した実行単位。`04` では CSV 読込のタスク数、`groupBy()` による Shuffle Read / Write を確認する。 |
+| **SQL / DataFrame** | DataFrame 操作の実行計画。`groupBy`、`countDistinct`、`orderBy` がどのような物理計画になるかを見る。 |
+| **Executors** | `local[2]` で動く Driver のメモリ使用量、実行済みタスク数、GC 時間を確認する。 |
+
+`04_read_baseball_csv.py` では、まず Jobs で一番時間がかかったジョブを開き、その中の Stages を確認します。`Exchange` や `HashAggregate` が含まれる Stage は、年・シーズン種別ごとに集め直す Shuffle に関係する部分です。入力サイズ・Shuffle Read / Write・Task Time を比べると、どこに時間が使われたかを判断できます。
+
+History Server を止めるときは、仮想環境を有効にした WSL ターミナルで次を実行します。イベントログは削除されないため、次回起動時にも履歴を確認できます。
+
+```bash
+# History Server だけを停止する
+python 07_stop_spark_history_server.py
+```
+
+> イベントログは実行のたびに増えます。ハンズオンで使う範囲では問題になりにくいですが、長期的に使う場合は不要なログを定期的に削除してください。ログを削除すると、その実行履歴は History Server からも見えなくなります。
+
+## 7. DuckDB のテーブルとして SQL で確認する
 
 次のスクリプトは、Spark が保存した Parquet を DuckDB の `baseball_year_summary` テーブルへ取り込み、SQL を実行します。
 
@@ -300,3 +356,33 @@ ORDER BY year, seasonType;
 ```
 
 `CREATE OR REPLACE TABLE` を使っているため、Spark で再集計した後にもう一度スクリプトを実行すると、同じテーブルを最新の Parquet の内容で更新できます。
+
+## 8. ローカル DuckDB UI でテーブルを見る
+
+DuckDB には、ローカル PC で動作する Web UI 拡張機能があります。次のコマンドを実行します。
+
+```bash
+# ローカルの baseball.duckdb を開き、DuckDB UI サーバーを起動する
+python 99_open_duckdb_ui.py
+```
+
+起動したターミナルは閉じずに、Windows 側のブラウザで [http://localhost:4213](http://localhost:4213) を開きます。WSL で起動した `localhost` ポートは通常 Windows のブラウザからもアクセスできます。
+
+初回は公式の `ui` 拡張機能が `~/.duckdb/extensions/` にダウンロードされます。また、UI の画面ファイルを更新するために DuckDB の UI 配信先へ通信する場合があります。どちらも UI 機能の取得のためであり、野球データをクラウドへ送信する処理ではありません。ネットワークに接続できない場合は、初回の拡張機能ダウンロードでエラーになります。2 回目以降は、ダウンロード済みの拡張機能を利用します。
+
+UI はスクリプトが開いたローカルの `baseball.duckdb` に接続します。左側のテーブル一覧から `baseball_year_summary` を選ぶか、ノートブックで次の SQL を実行してください。
+
+```sql
+-- 年・シーズン種別ごとのイベント行数と試合数を確認する
+SELECT
+    year,
+    seasonType,
+    event_row_count,
+    game_count
+FROM baseball_year_summary
+ORDER BY year, seasonType;
+```
+
+終わったら、UI を起動したターミナルで `Ctrl+C` を押します。UI サーバーと DuckDB 接続が停止し、`baseball.duckdb` は削除されません。
+
+> この手順はローカル DuckDB だけを使用します。MotherDuck にサインインせず、MotherDuck やその他クラウドへデータを送信しません。DuckDB UI の公式説明: [UI Extension](https://duckdb.org/docs/stable/core_extensions/ui)
